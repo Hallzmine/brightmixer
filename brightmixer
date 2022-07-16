@@ -1,0 +1,59 @@
+import subprocess
+import re
+import sys
+from pynput import keyboard
+from colorama import Fore, Style
+
+scale= 16
+increment= 0.05
+selected= 0
+
+def gather_data():
+    global result, monitors, brights
+    result = subprocess.check_output(['xrandr', '-q']).decode("utf-8")
+    monitors = re.findall('^.*?(?= connected)', result, re.M)
+    result = subprocess.check_output(['xrandr', '--verbose', '--current']).decode("utf-8")
+    brights = list(map(float, re.findall('(?<=Brightness: ).*', result)))
+
+def br_add(value, pos):
+    brights[pos] += value
+    brights[pos] = round(brights[pos], 2)
+    subprocess.run(['xrandr', '--output', monitors[pos], '--brightness', str(brights[pos])])
+
+def display_bar(pos):
+    bars = brights[pos]*(scale*2)
+    bar = ('▮'* int(bars)) + ('-' * ((scale*3) - int(bars)))
+    c_bar = Fore.GREEN + bar[0:scale] + Fore.YELLOW + bar[scale:scale*2] + Fore.RED + bar[(scale*2):scale*3] + Style.RESET_ALL
+    if(pos==selected):
+        print(monitors[pos] + "\t" + str(int(brights[pos]*100)) + "\t─┌"+ Style.BRIGHT + c_bar +"┐─")
+        print("\t" +str(int(brights[pos]*100)) + "\t─└"+ Style.BRIGHT + c_bar +"┘─")
+    else:
+        print(monitors[pos] + "\t" + str(int(brights[pos]*100)) + "\t ┌"+ c_bar +"┐ ")
+        print("\t" + str(int(brights[pos]*100)) + "\t └"+ c_bar +"┘ ")
+
+def refresh_bars():
+    subprocess.run('clear')
+    for x in range(len(monitors)):
+        display_bar(x)
+
+def on_press(Key):
+    global selected
+    if(Key==keyboard.Key.right):
+        br_add(increment,selected)
+    elif(Key==keyboard.Key.left):
+        br_add(-increment,selected)
+    elif(Key==keyboard.Key.up):
+        if(selected>0):
+            selected -= 1
+    elif(Key==keyboard.Key.down):
+        if(selected<len(monitors)-1):
+            selected += 1
+    elif(Key==keyboard.KeyCode.from_char('q')):
+        sys.exit()
+    refresh_bars()
+
+gather_data()
+refresh_bars()
+
+with keyboard.Listener(on_press=on_press) as listener:
+    listener.join()

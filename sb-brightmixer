@@ -1,0 +1,8 @@
+#!/bin/sh
+
+case $BLOCK_BUTTON in
+	1) "$TERMINAL" -t "brightmixer" -e python ~/.local/bin/statusbar/brightmixer ;;
+	2) restartwm ;;
+	3) notify-send "Bright Mixer" "\- Left Click to adjust screen brightness" ;;
+	6) "$TERMINAL" -e "$EDITOR" "$0" ;;
+esac; echo "🔆"
